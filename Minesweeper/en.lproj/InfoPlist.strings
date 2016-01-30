@@ -1,0 +1,9 @@
+/* 
+  InfoPlist.strings
+  Minesweeper
+
+  Created by JohnnyYin on 16/1/31.
+  Copyright © 2016年 JohnnyYin. All rights reserved.
+*/
+CFBundleDisplayName = "Minesweeper";
+CFBundleName = "Minesweeper";
