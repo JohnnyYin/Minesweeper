@@ -56,7 +56,7 @@ class GameView: UIView {
     var gameStartTime:Double = 0
     var pausedTime:Int = 0
     var pausedStartTime:Double = 0
-    var timerRunning = false
+    var timer:NSTimer?
     
     weak var viewController: UIViewController?
     
@@ -95,10 +95,6 @@ class GameView: UIView {
     }
     
     func initGameData() {
-        gameStartTime = NSDate().timeIntervalSince1970
-        timerRunning = true
-        self.repeatTimer()
-        
         let sizeWithLine = GRID_SIZE + LINE_WIDTH
         let squareCount = rowNum * columnNum
         let startX = horizontalPadding + LINE_WIDTH / 2
@@ -140,6 +136,9 @@ class GameView: UIView {
                 curMineNum++
             }
         }
+        
+        gameStartTime = NSDate().timeIntervalSince1970
+        startTimer()
     }
     
     override func didMoveToWindow() {
@@ -168,13 +167,10 @@ class GameView: UIView {
         let enterBackground = notification.name == UIApplicationDidEnterBackgroundNotification
         if (enterBackground) {
             pausedStartTime = NSDate().timeIntervalSince1970
-            if timerRunning {
-                timerRunning = false
-            }
+            timer?.invalidate()
         } else {
-            if !gameOver && !timerRunning {
-                timerRunning = true
-                repeatTimer()
+            if !gameOver {
+                startTimer()
             }
             if pausedStartTime <= 0 {
                 return
@@ -233,11 +229,11 @@ class GameView: UIView {
                 var squareStr: NSString
                 if square.status == Square.Status.flag {
                     flagNum++
-                    squareStr = "🚩"
+                    squareStr = "�"
                 } else if square.status == Square.Status.bomb {
-                    squareStr = "💥"
+                    squareStr = "�"
                 } else if square.isMine {
-                    squareStr = "💣"
+                    squareStr = "�"
                 } else if square.mineNum > 0 {
                     squareStr = "\(square.mineNum)"
                     if square.mineNum > 5 {
@@ -313,7 +309,7 @@ class GameView: UIView {
     func bomb(index:Int) {
         calcScore()
         gameOver = true
-        timerRunning = false
+        timer?.invalidate()
         for s in squares {
             if s.isHide() {
                 s.status = Square.Status.show
@@ -390,7 +386,7 @@ class GameView: UIView {
         }
         if successed {
             gameOver = true
-            timerRunning = false
+            timer?.invalidate()
             calcScore()
             showAlert("成功啦~~\n分数：\(score)")
         }
@@ -436,18 +432,20 @@ class GameView: UIView {
         self.viewController?.presentViewController(alertController, animated: true, completion: nil)
     }
     
-    func repeatTimer() {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, Int64(1 * Double(NSEC_PER_SEC))),dispatch_get_main_queue(), {
-            if (self.timerRunning) {
-                self.repeatTimer()
-                self.setNeedsDisplay()
-            }
-        })
+    func startTimer() {
+        if timer != nil {
+            timer?.invalidate()
+        }
+        timer = NSTimer.scheduledTimerWithTimeInterval(1, target: self, selector: "updateTime:", userInfo: "GameTimer", repeats: true)
+    }
+    
+    func updateTime(timer: NSTimer) {
+        self.setNeedsDisplay()
     }
     
     func restart() {
         gameOver = false
-        timerRunning = false
+        timer?.invalidate()
         score = 0
         mineNum = 0
         gameStartTime = 0
@@ -459,7 +457,7 @@ class GameView: UIView {
     
     deinit {
         gameOver = true
-        timerRunning = false
+        timer?.invalidate()
     }
     
 }
