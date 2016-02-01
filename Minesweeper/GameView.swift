@@ -229,11 +229,11 @@ class GameView: UIView {
                 var squareStr: NSString
                 if square.status == Square.Status.flag {
                     flagNum++
-                    squareStr = "�"
+                    squareStr = "🚩"
                 } else if square.status == Square.Status.bomb {
-                    squareStr = "�"
+                    squareStr = "💥"
                 } else if square.isMine {
-                    squareStr = "�"
+                    squareStr = "💣"
                 } else if square.mineNum > 0 {
                     squareStr = "\(square.mineNum)"
                     if square.mineNum > 5 {
