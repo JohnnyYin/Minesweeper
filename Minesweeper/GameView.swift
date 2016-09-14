@@ -43,8 +43,8 @@ class GameView: UIView {
     var verticalPadding:CGFloat = 0
     let LINE_WIDTH = CGFloat(5)
     var squares = [Square]();
-    let squareBgColor = UIColor(red: 244/255.0, green: 244/255.0, blue: 244/255.0, alpha: 1.0).CGColor
-    let bgColor = UIColor(red: 204/255.0, green: 204/255.0, blue: 204/255.0, alpha: 1.0).CGColor
+    let squareBgColor = UIColor(red: 244/255.0, green: 244/255.0, blue: 244/255.0, alpha: 1.0).cgColor
+    let bgColor = UIColor(red: 204/255.0, green: 204/255.0, blue: 204/255.0, alpha: 1.0).cgColor
     var drawTextAttr:Dictionary<String, AnyObject>?;
     var columnNum = 0
     var rowNum = 0
@@ -56,26 +56,26 @@ class GameView: UIView {
     var gameStartTime:Double = 0
     var pausedTime:Int = 0
     var pausedStartTime:Double = 0
-    var timer:NSTimer?
+    var timer:Timer?
     
     weak var viewController: UIViewController?
     
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
-        self.frame = UIScreen.mainScreen().bounds
+        self.frame = UIScreen.main.bounds
         
         // 点击事件
-        self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: "handleTapGesture:"))
+        self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(GameView.handleTapGesture(_:))))
         
         //长按手势
-        let longPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: "handleLongpressGesture:")
+        let longPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(GameView.handleLongpressGesture(_:)))
         longPressGestureRecognizer.minimumPressDuration = 0.3
         self.addGestureRecognizer(longPressGestureRecognizer)
         
-        let fieldColor: UIColor = UIColor.darkGrayColor()
-        let fieldFont = UIFont.boldSystemFontOfSize(18)
+        let fieldColor: UIColor = UIColor.darkGray
+        let fieldFont = UIFont.boldSystemFont(ofSize: 18)
         let paraStyle = NSMutableParagraphStyle()
-        paraStyle.alignment = NSTextAlignment.Center;
+        paraStyle.alignment = NSTextAlignment.center;
         
         drawTextAttr = [
             NSForegroundColorAttributeName: fieldColor,
@@ -84,13 +84,13 @@ class GameView: UIView {
         ]
         
         let sizeWithLine = GRID_SIZE + LINE_WIDTH
-        statusHeight = UIApplication.sharedApplication().statusBarFrame.height;
+        statusHeight = UIApplication.shared.statusBarFrame.height;
         rowNum = Int((frame.height - statusHeight - scoreBarHeight) / sizeWithLine)
         columnNum = Int(frame.width / sizeWithLine)
-        horizontalPadding = (frame.width % sizeWithLine) / 2;
-        verticalPadding = ((frame.height - statusHeight - scoreBarHeight) % sizeWithLine) / 2
+        horizontalPadding = (frame.width.truncatingRemainder(dividingBy: sizeWithLine)) / 2;
+        verticalPadding = ((frame.height - statusHeight - scoreBarHeight).truncatingRemainder(dividingBy: sizeWithLine)) / 2
         
-        squares = [Square](count: rowNum * columnNum, repeatedValue: Square(rect: CGRectMake(0, 0, 0, 0), index: -1, rowIndex: -1, columnIndex: -1))
+        squares = [Square](repeating: Square(rect: CGRect(x: 0, y: 0, width: 0, height: 0), index: -1, rowIndex: -1, columnIndex: -1), count: rowNum * columnNum)
         initGameData()
     }
     
@@ -99,10 +99,10 @@ class GameView: UIView {
         let squareCount = rowNum * columnNum
         let startX = horizontalPadding + LINE_WIDTH / 2
         let startY = verticalPadding + LINE_WIDTH / 2 + statusHeight + scoreBarHeight;
-        for var i = 0; i < rowNum; i++ {// 行
-            for var j = 0; j < columnNum; j++ {// 列
+        for i in 0 ..< rowNum {// 行
+            for j in 0 ..< columnNum {// 列
                 let index = i * columnNum + j
-                squares[index] = Square(rect: CGRectMake(startX + CGFloat(j) * sizeWithLine, startY + CGFloat(i) * sizeWithLine, GRID_SIZE, GRID_SIZE), index: index, rowIndex: i, columnIndex: j)
+                squares[index] = Square(rect: CGRect(x: startX + CGFloat(j) * sizeWithLine, y: startY + CGFloat(i) * sizeWithLine, width: GRID_SIZE, height: GRID_SIZE), index: index, rowIndex: i, columnIndex: j)
             }
         }
         
@@ -111,11 +111,11 @@ class GameView: UIView {
         var curMineNum = 0
         mineNum = maxMineNum
         
-        func addMineNum(row:Int, column:Int) {
+        func addMineNum(_ row:Int, column:Int) {
             if (row >= 0 && row < rowNum && column >= 0 && column < columnNum) {
                 let square = squares[row * columnNum + column]
                 if (!square.isMine) {
-                    square.mineNum++
+                    square.mineNum += 1
                 }
             }
         }
@@ -133,40 +133,42 @@ class GameView: UIView {
                 addMineNum(square.rowIndex + 1, column: square.columnIndex - 1)
                 addMineNum(square.rowIndex + 1, column: square.columnIndex)
                 addMineNum(square.rowIndex + 1, column: square.columnIndex + 1)
-                curMineNum++
+                curMineNum += 1
             }
         }
         
-        gameStartTime = NSDate().timeIntervalSince1970
+        gameStartTime = Date().timeIntervalSince1970
         startTimer()
     }
     
     override func didMoveToWindow() {
-        for var next: UIView? = self.superview; next != nil; next = next!.superview {
-            let nextResponder = next?.nextResponder()
+        var next: UIView? = self.superview;
+        while next != nil {
+            let nextResponder = next?.next
             if nextResponder is UIViewController {
                 self.viewController = nextResponder as? UIViewController
                 break
             }
+            next = next!.superview;
         }
         
         // 添加应用进入后台监听
-        NSNotificationCenter.defaultCenter().addObserver(
+        NotificationCenter.default.addObserver(
             self,
-            selector: "applicationForegroundBackgroundChanged:",
-            name: UIApplicationDidEnterBackgroundNotification,
+            selector: #selector(GameView.applicationForegroundBackgroundChanged(_:)),
+            name: NSNotification.Name.UIApplicationDidEnterBackground,
             object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(
+        NotificationCenter.default.addObserver(
             self,
-            selector: "applicationForegroundBackgroundChanged:",
-            name: UIApplicationWillEnterForegroundNotification,
+            selector: #selector(GameView.applicationForegroundBackgroundChanged(_:)),
+            name: NSNotification.Name.UIApplicationWillEnterForeground,
             object: nil)
     }
     
-    func applicationForegroundBackgroundChanged(notification: NSNotification) {
-        let enterBackground = notification.name == UIApplicationDidEnterBackgroundNotification
+    func applicationForegroundBackgroundChanged(_ notification: Notification) {
+        let enterBackground = notification.name == NSNotification.Name.UIApplicationDidEnterBackground
         if (enterBackground) {
-            pausedStartTime = NSDate().timeIntervalSince1970
+            pausedStartTime = Date().timeIntervalSince1970
             timer?.invalidate()
         } else {
             if !gameOver {
@@ -175,18 +177,18 @@ class GameView: UIView {
             if pausedStartTime <= 0 {
                 return
             }
-            pausedTime += Int(NSDate().timeIntervalSince1970 - pausedStartTime)
+            pausedTime += Int(Date().timeIntervalSince1970 - pausedStartTime)
             pausedStartTime = 0
         }
     }
     
-    override func drawRect(rect: CGRect) {
-        super.drawRect(rect)
-        let context:CGContextRef? = UIGraphicsGetCurrentContext() //获取画笔上下文
-        CGContextSetAllowsAntialiasing(context, true) //抗锯齿设置
-        CGContextSetFillColorWithColor(context, bgColor)
-        CGContextSetStrokeColorWithColor(context, UIColor.whiteColor().CGColor)
-        CGContextSetLineWidth(context, LINE_WIDTH) //设置画笔宽度
+    override func draw(_ rect: CGRect) {
+        super.draw(rect)
+        let context:CGContext? = UIGraphicsGetCurrentContext() //获取画笔上下文
+        context?.setAllowsAntialiasing(true) //抗锯齿设置
+        context?.setFillColor(bgColor)
+        context?.setStrokeColor(UIColor.white.cgColor)
+        context?.setLineWidth(LINE_WIDTH) //设置画笔宽度
         var curFillColor = bgColor
         for square in squares {
             if square.index < 0 {
@@ -198,17 +200,17 @@ class GameView: UIView {
             case .flag:
                 if curFillColor !== bgColor {
                     curFillColor = bgColor
-                    CGContextSetFillColorWithColor(context, curFillColor)
+                    context?.setFillColor(curFillColor)
                 }
-                CGContextFillRect(context, square.rect)
+                context?.fill(square.rect)
             case .bomb:
                 fallthrough
             case .show:
                 if curFillColor !== squareBgColor {
                     curFillColor = squareBgColor
-                    CGContextSetFillColorWithColor(context, curFillColor)
+                    context?.setFillColor(curFillColor)
                 }
-                CGContextFillRect(context, square.rect)
+                context?.fill(square.rect)
             }
         }
         
@@ -225,65 +227,65 @@ class GameView: UIView {
             case .flag:
                 fallthrough
             case .show:
-                drawTextAttr?[NSForegroundColorAttributeName] = UIColor.darkGrayColor()
+                drawTextAttr?[NSForegroundColorAttributeName] = UIColor.darkGray
                 var squareStr: NSString
                 if square.status == Square.Status.flag {
-                    flagNum++
+                    flagNum += 1
                     squareStr = "🚩"
                 } else if square.status == Square.Status.bomb {
                     squareStr = "💥"
                 } else if square.isMine {
                     squareStr = "💣"
                 } else if square.mineNum > 0 {
-                    squareStr = "\(square.mineNum)"
+                    squareStr = "\(square.mineNum)" as NSString
                     if square.mineNum > 5 {
-                        drawTextAttr?[NSForegroundColorAttributeName] = UIColor.redColor()
+                        drawTextAttr?[NSForegroundColorAttributeName] = UIColor.red
                     } else if square.mineNum > 3 {
-                        drawTextAttr?[NSForegroundColorAttributeName] = UIColor.blueColor()
+                        drawTextAttr?[NSForegroundColorAttributeName] = UIColor.blue
                     } else if square.mineNum > 1 {
-                        drawTextAttr?[NSForegroundColorAttributeName] = UIColor.orangeColor()
+                        drawTextAttr?[NSForegroundColorAttributeName] = UIColor.orange
                     }
                 } else {
                     continue
                 }
-                squareStr.drawInRect(square.rect.offsetBy(dx: 0, dy: 8), withAttributes: drawTextAttr!)
+                squareStr.draw(in: square.rect.offsetBy(dx: 0, dy: 8), withAttributes: drawTextAttr!)
             }
         }
         
         calcScore()
         let scoreBarStr = "雷数：\(mineNum - flagNum)/\(mineNum)  时间：\(parseSpendTime())  分数：\(score)"
-        drawTextAttr?[NSForegroundColorAttributeName] = UIColor.darkGrayColor()
-        scoreBarStr.drawInRect(CGRectMake(0, statusHeight + scoreBarHeight / 3, self.frame.width, scoreBarHeight), withAttributes: drawTextAttr!)
+        drawTextAttr?[NSForegroundColorAttributeName] = UIColor.darkGray
+        scoreBarStr.draw(in: CGRect(x: 0, y: statusHeight + scoreBarHeight / 3, width: self.frame.width, height: scoreBarHeight), withAttributes: drawTextAttr!)
     }
     
     func parseSpendTime() -> String {
         var timeStr:String = ""
-        var time = Int(NSDate().timeIntervalSince1970 - gameStartTime) - pausedTime
+        var time = Int(Date().timeIntervalSince1970 - gameStartTime) - pausedTime
         if time > 60 * 60 {
             let t = time / 3600
             if t < 10 {
-                timeStr.appendContentsOf("0")
+                timeStr.append("0")
             }
-            timeStr.appendContentsOf("\(t):")
+            timeStr.append("\(t):")
             time = time % 3600
         }
         
         var t = time / 60
         if t < 10 {
-            timeStr.appendContentsOf("0")
+            timeStr.append("0")
         }
-        timeStr.appendContentsOf("\(t):")
+        timeStr.append("\(t):")
         time = time % 60
         t = time
         
         if t < 10 {
-            timeStr.appendContentsOf("0")
+            timeStr.append("0")
         }
-        timeStr.appendContentsOf("\(t)")
+        timeStr.append("\(t)")
         return timeStr
     }
     
-    func expand(row:Int, column:Int) {
+    func expand(_ row:Int, column:Int) {
         if (row < 0 || row >= rowNum || column < 0 || column >= columnNum) {
             return
         }
@@ -306,7 +308,7 @@ class GameView: UIView {
         expand(checkSquare.rowIndex + 1, column: checkSquare.columnIndex + 1)
     }
     
-    func bomb(index:Int) {
+    func bomb(_ index:Int) {
         calcScore()
         gameOver = true
         timer?.invalidate()
@@ -322,13 +324,13 @@ class GameView: UIView {
     }
     
     // 点击事件
-    func handleTapGesture(sender: UITapGestureRecognizer){
-        if (sender.state == UIGestureRecognizerState.Ended) {
+    func handleTapGesture(_ sender: UITapGestureRecognizer){
+        if (sender.state == UIGestureRecognizerState.ended) {
             if gameOver {
                 restart()
                 return
             }
-            let point: CGPoint = sender.locationInView(self)
+            let point: CGPoint = sender.location(in: self)
             for square in squares {
                 let hit = square.rect.contains(point)
                 if (!hit) {
@@ -352,9 +354,9 @@ class GameView: UIView {
     }
     
     //长按手势
-    func handleLongpressGesture(sender: UILongPressGestureRecognizer) {
-        if sender.state == UIGestureRecognizerState.Began {
-            let point: CGPoint = sender.locationInView(self)
+    func handleLongpressGesture(_ sender: UILongPressGestureRecognizer) {
+        if sender.state == UIGestureRecognizerState.began {
+            let point: CGPoint = sender.location(in: self)
             for square in squares {
                 let hit = square.rect.contains(point)
                 if (hit) {
@@ -413,33 +415,33 @@ class GameView: UIView {
                 continue
             }
         }
-        self.score = baseScore * 5 - (Int(NSDate().timeIntervalSince1970 - gameStartTime) - pausedTime) / 5
+        self.score = baseScore * 5 - (Int(Date().timeIntervalSince1970 - gameStartTime) - pausedTime) / 5
         if self.score < 0 {
             self.score = 0
         }
     }
     
-    func showAlert(message:String) {
-        let alertController = UIAlertController(title: "扫雷", message: message, preferredStyle: UIAlertControllerStyle.Alert)
-        let cancelAction = UIAlertAction(title: "取消", style: UIAlertActionStyle.Cancel, handler: nil)
-        let resetAction = UIAlertAction(title: "重新开始", style: UIAlertActionStyle.Destructive, handler: {
+    func showAlert(_ message:String) {
+        let alertController = UIAlertController(title: "扫雷", message: message, preferredStyle: UIAlertControllerStyle.alert)
+        let cancelAction = UIAlertAction(title: "取消", style: UIAlertActionStyle.cancel, handler: nil)
+        let resetAction = UIAlertAction(title: "重新开始", style: UIAlertActionStyle.destructive, handler: {
             (alerts: UIAlertAction!) -> Void in
             self.restart()
         })
         
         alertController.addAction(resetAction)
         alertController.addAction(cancelAction)
-        self.viewController?.presentViewController(alertController, animated: true, completion: nil)
+        self.viewController?.present(alertController, animated: true, completion: nil)
     }
     
     func startTimer() {
         if timer != nil {
             timer?.invalidate()
         }
-        timer = NSTimer.scheduledTimerWithTimeInterval(1, target: self, selector: "updateTime:", userInfo: "GameTimer", repeats: true)
+        timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(GameView.updateTime(_:)), userInfo: "GameTimer", repeats: true)
     }
     
-    func updateTime(timer: NSTimer) {
+    func updateTime(_ timer: Timer) {
         self.setNeedsDisplay()
     }
     

@@ -107,6 +107,7 @@
 					B2034EDD1C5CBC55001B6B58 = {
 						CreatedOnToolsVersion = 7.2;
 						DevelopmentTeam = ZWX8Q49763;
+						LastSwiftMigration = 0800;
 					};
 				};
 			};
@@ -278,6 +279,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.johnnyyin.Minesweeper;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
 		};
@@ -289,6 +291,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.johnnyyin.Minesweeper;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 3.0;
 			};
 			name = Release;
 		};
